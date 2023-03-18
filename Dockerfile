@@ -1,13 +1,14 @@
 FROM node:latest
 
 # Install pm2
-RUN yarn global add pm2 && yarn global add nodemon
+RUN npm install pm2 -g
 
 RUN mkdir -p /app
 
-WORKDIR /app/server
-COPY . /app/server
-RUN cd /app/server
+COPY . /app/server/
+WORKDIR /app/server/
 RUN npm install
+
+ENTRYPOINT ["/app/server/entrypoint.sh"]
 # Start pm2.json process file
-ENTRYPOINT ["pm2-docker"]
+CMD ["pm2-docker","pm2.json"]

@@ -1,11 +1,11 @@
 {
   "apps": [
     {
-      "name": "microservice-events",
-      "script": "yarn run debug",
+      "name": "boilerplate",
+      "script": "npm run start",
       "args": "",
       "watch": true,
-      "ignore_watch": [".git", "node_modules", "coverage", ".nyc_output"],
+      "ignore_watch": [".git", "node_modules", "build"],
       "watch_options": {
         "usePolling": true
       },
