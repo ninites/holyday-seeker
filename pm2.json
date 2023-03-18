@@ -1,0 +1,17 @@
+{
+  "apps": [
+    {
+      "name": "microservice-events",
+      "script": "yarn run debug",
+      "args": "",
+      "watch": true,
+      "ignore_watch": [".git", "node_modules", "coverage", ".nyc_output"],
+      "watch_options": {
+        "usePolling": true
+      },
+      "env": {
+        "NODE_ENV": "development"
+      }
+    }
+  ]
+}
