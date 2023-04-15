@@ -13,7 +13,7 @@ class Server {
   }
 
   launch(): void {
-    const port = 3000;
+    const port = 8000;
     this.server.listen(port);
     console.log('SERVER RUNNING on PORT' + port);
   }

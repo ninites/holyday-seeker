@@ -1,0 +1,11 @@
+@import url("/node_modules/primeflex/primeflex.css");
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: (--font-family);
+}

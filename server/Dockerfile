@@ -1,4 +1,4 @@
-FROM node:latest
+FROM node:19
 
 # Install pm2
 RUN npm install pm2 -g
