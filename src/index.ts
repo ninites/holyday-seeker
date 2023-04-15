@@ -1,6 +1,6 @@
 import express from 'express';
 import { Test } from './api/test';
-
+import { FlightsApi } from './api/flights';
 class Server {
   server: express.Application;
   testAPI!: Test;
@@ -12,6 +12,7 @@ class Server {
 
   initRouting() {
     new Test(this.server);
+    new FlightsApi(this.server);
   }
 
   launch(): void {
