@@ -78,7 +78,7 @@ class FlightsManager {
         const { data } = await this.searchFlights(
           departureAirport.code,
           destination.code,
-          options
+          { date: options.from, returnDate: options.to }
         );
         const marshalledData = marshallFlightsForView(data);
         flights.push(...marshalledData);
@@ -104,6 +104,7 @@ class FlightsManager {
       filter: 'best',
       ...options,
     };
+
     const flights = await this._flightsQuery.searchFlights(params);
     return flights;
   }
