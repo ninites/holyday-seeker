@@ -93,38 +93,45 @@ class FlightsManager {
         };
         const { data } = await this._skyScannerAdapter.get(endpoint, params);
         const marshalledData = data
-          // .filter((flight: SkyScannerFlights) => {
-          //   if (flight.price.amount > 1400) {
-          //     return false;
-          //   }
-          //   return true;
-          // })
+          .filter((flight: SkyScannerFlights) => {
+            if (flight.price.amount > 1400) {
+              return false;
+            }
+            return true;
+          })
           .map((flight: SkyScannerFlights) => {
+            const [wayIn, wayOut] = flight.legs;
             return {
               price: flight.price.amount,
               priceLastUpdate: flight.price.last_updated,
-              legs: flight.legs.map((leg) => {
-                return {
-                  origin: leg.origin.name,
-                  destination: leg.destination.name,
-                  departure: leg.departure,
-                  arrival: leg.arrival,
-                  duration: leg.duration,
-                  stopCount: leg.stop_count,
-                  stops: leg.stops.map((stop) => {
-                    return {
-                      name: stop.name,
-                      displayCode: stop.display_code,
-                    };
-                  }),
-                  carriers: leg.carriers.map((carrier) => {
-                    return {
-                      name: carrier.name,
-                      displayCode: carrier.display_code,
-                    };
-                  }),
-                };
-              }),
+              wayIn: {
+                origin: wayIn.origin.name,
+                destination: wayIn.destination.name,
+                departure: wayIn.departure,
+                arrival: wayIn.arrival,
+                duration: fromMinutesToHours(wayIn.duration),
+                stopCount: wayIn.stop_count,
+                stops: wayIn.stops.map((stop) => {
+                  return {
+                    name: stop.name,
+                    displayCode: stop.display_code,
+                  };
+                }),
+              },
+              wayOut: {
+                origin: wayOut.origin.name,
+                destination: wayOut.destination.name,
+                departure: wayOut.departure,
+                arrival: wayOut.arrival,
+                duration: fromMinutesToHours(wayOut.duration),
+                stopCount: wayOut.stop_count,
+                stops: wayOut.stops.map((stop) => {
+                  return {
+                    name: stop.name,
+                    displayCode: stop.display_code,
+                  };
+                }),
+              },
             };
           });
         flights.push(...marshalledData);
@@ -232,3 +239,8 @@ const instance = new FlightsManager();
 export { instance, FlightsManager };
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const fromMinutesToHours = (minutes: number) => {
+  const hours = Math.floor(minutes / 60);
+  const minutesLeft = minutes % 60;
+  return `${hours}h ${minutesLeft}m`;
+};
