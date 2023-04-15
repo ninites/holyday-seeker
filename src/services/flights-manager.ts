@@ -5,7 +5,7 @@ import {
 } from '../query/FlightsQuery';
 
 class FlightsManager {
-  _flightsQuery: FlightsQuery;
+  private readonly _flightsQuery: FlightsQuery;
   constructor(flightsQuery: FlightsQuery = defaultFlightQuery) {
     this._flightsQuery = flightsQuery;
   }
