@@ -19,16 +19,18 @@ class FlightsManager {
   async getEuropeanFlights(
     from: string = '',
     to: string = '',
+    departureCities: string[] = [],
     destination: string = ''
   ) {
     console.log(
       `FLIGHTS MANAGER | getEuropeanFlights | START | from: ${from} | to: ${to}  | destination: ${destination}`
     );
-    const startCities = ['Paris', 'Milan', 'Rome', 'Amsterdam'];
-    const startAirports = await this.getAirportsByListOfCities(startCities);
+    const departureAirports = await this.getAirportsByListOfCities(
+      departureCities
+    );
     const destinationAirports = await this.getAirportByCity(destination);
     const flights = await this.getFlightsSortedByPrice(
-      startAirports,
+      departureAirports,
       destinationAirports,
       {
         from,
@@ -42,7 +44,7 @@ class FlightsManager {
   }
 
   async getFlightsSortedByPrice(
-    startAirports: { code: string; name: string; city: string }[],
+    departureAirports: { code: string; name: string; city: string }[],
     destinationAirports: { code: string; name: string }[],
     options: { from: string; to: string }
   ) {
@@ -54,7 +56,7 @@ class FlightsManager {
       try {
         const flightsForDestinationAirport =
           await this.getFlightsByListOfStartAirports(
-            startAirports,
+            departureAirports,
             destinationAirport,
             options
           );

@@ -21,15 +21,19 @@ class FlightsApi {
   routes() {
     this._app.get(`${ROUTE}/`, async (req, res) => {
       try {
-        const from = (req.query.from as string)  ;
-        const to = (req.query.to as string)  ;
-        const destination = (req.query.destination as string);
-        if (!from || !to || !destination) {
+        const from = req.query.from as string;
+        const to = req.query.to as string;
+        const destination = req.query.destination as string;
+        const departureCities = req.query.departureCities
+          ? JSON.parse(req.query.departureCities as string)
+          : [];
+        if (!from || !to || !destination || departureCities.length === 0) {
           throw new Error('Missing params');
         }
         const result = await this._flightsManager.getEuropeanFlights(
           from,
           to,
+          departureCities,
           destination
         );
         res.send(result);
