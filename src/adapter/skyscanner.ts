@@ -6,12 +6,12 @@ const DEFAULT_CONFIG = {
   apiURL: process.env.SKY_SCANNER_API_URL,
   headers: {
     'X-RapidAPI-Key': process.env.SKY_SCANNER_KEY,
-    'X-RapidAPI-Host': process.env.SKY_SCANNER_HOST
+    'X-RapidAPI-Host': process.env.SKY_SCANNER_HOST,
   },
 };
 
-class SkyScanner {
-  constructor() { }
+class SkyScannerAdapter {
+  constructor() {}
 
   async get(endpoint: string, params: { [key: string]: any }) {
     const options = {
@@ -24,5 +24,5 @@ class SkyScanner {
   }
 }
 
-const instance = new SkyScanner();
-export { instance, SkyScanner }
+const instance = new SkyScannerAdapter();
+export { instance, SkyScannerAdapter };

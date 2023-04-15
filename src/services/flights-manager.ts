@@ -1,19 +1,13 @@
-import { SkyScannerFlights } from '../interfaces/skyscanner';
-import { Amadeus, instance as defaultAmadeusAdapter } from '../query/amadeus';
+import { SkyScannerFlight } from '../interfaces/skyscanner';
 import {
-  SkyScanner,
-  instance as defaultSkyScannerAdapter,
-} from '../query/skyscanner';
+  FlightsQuery,
+  instance as defaultFlightQuery,
+} from '../query/FlightsQuery';
 
 class FlightsManager {
-  _amadeusAdapter: Amadeus;
-  _skyScannerAdapter: SkyScanner;
-  constructor(
-    amadeusAdapter: Amadeus = defaultAmadeusAdapter,
-    skyScannerAdapter: SkyScanner = defaultSkyScannerAdapter
-  ) {
-    this._amadeusAdapter = amadeusAdapter;
-    this._skyScannerAdapter = skyScannerAdapter;
+  _flightsQuery: FlightsQuery;
+  constructor(flightsQuery: FlightsQuery = defaultFlightQuery) {
+    this._flightsQuery = flightsQuery;
   }
 
   async getEuropeanFlights(
@@ -25,10 +19,10 @@ class FlightsManager {
     console.log(
       `FLIGHTS MANAGER | getEuropeanFlights | START | from: ${from} | to: ${to}  | destination: ${destination}`
     );
-    const departureAirports = await this.getAirportsByListOfCities(
+    const departureAirports = await this.getTwoMainAirportsByListOfCities(
       departureCities
     );
-    const destinationAirports = await this.getAirportByCity(destination);
+    const destinationAirports = await this.searchAirportByCityName(destination);
     const flights = await this.getFlightsSortedByPrice(
       departureAirports,
       destinationAirports,
@@ -55,7 +49,7 @@ class FlightsManager {
       );
       try {
         const flightsForDestinationAirport =
-          await this.getFlightsByListOfStartAirports(
+          await this.getFlightsByListOfDepartureAirports(
             departureAirports,
             destinationAirport,
             options
@@ -70,70 +64,23 @@ class FlightsManager {
     });
   }
 
-  async getFlightsByListOfStartAirports(
-    airports: { code: string; name: string; city: string }[],
+  async getFlightsByListOfDepartureAirports(
+    departureAirports: { code: string; name: string; city: string }[],
     destination: { code: string; name: string },
     options: { from: string; to: string }
   ) {
     const flights = [];
-    for (const airport of airports) {
+    for (const departureAirport of departureAirports) {
       try {
         console.log(
-          `FLIGHTS MANAGER | getFlightsByListOfAirports | START | airport: ${airport.name} | from: ${options.from} | to: ${options.to}  | destination: ${destination.name}`
+          `FLIGHTS MANAGER | getFlightsByListOfAirports | START | airport: ${departureAirport.name} | from: ${options.from} | to: ${options.to}  | destination: ${destination.name}`
         );
-        const endpoint = 'searchFlights';
-        const params = {
-          origin: airport.code,
-          destination: destination.code,
-          date: options.from,
-          returnDate: options.to,
-          cabinClass: 'economy',
-          currency: 'EUR',
-          filter: 'best',
-        };
-        const { data } = await this._skyScannerAdapter.get(endpoint, params);
-        const marshalledData = data
-          .filter((flight: SkyScannerFlights) => {
-            if (flight.price.amount > 1400) {
-              return false;
-            }
-            return true;
-          })
-          .map((flight: SkyScannerFlights) => {
-            const [wayIn, wayOut] = flight.legs;
-            return {
-              price: flight.price.amount,
-              priceLastUpdate: flight.price.last_updated,
-              wayIn: {
-                origin: wayIn.origin.name,
-                destination: wayIn.destination.name,
-                departure: wayIn.departure,
-                arrival: wayIn.arrival,
-                duration: fromMinutesToHours(wayIn.duration),
-                stopCount: wayIn.stop_count,
-                stops: wayIn.stops.map((stop) => {
-                  return {
-                    name: stop.name,
-                    displayCode: stop.display_code,
-                  };
-                }),
-              },
-              wayOut: {
-                origin: wayOut.origin.name,
-                destination: wayOut.destination.name,
-                departure: wayOut.departure,
-                arrival: wayOut.arrival,
-                duration: fromMinutesToHours(wayOut.duration),
-                stopCount: wayOut.stop_count,
-                stops: wayOut.stops.map((stop) => {
-                  return {
-                    name: stop.name,
-                    displayCode: stop.display_code,
-                  };
-                }),
-              },
-            };
-          });
+        const { data } = await this.searchFlights(
+          departureAirport.code,
+          destination.code,
+          options
+        );
+        const marshalledData = marshallFlightsForView(data);
         flights.push(...marshalledData);
       } catch (error: any) {
         console.log(
@@ -144,13 +91,29 @@ class FlightsManager {
     return flights;
   }
 
-  async getAirportByCity(city: string = '') {
+  async searchFlights(
+    origin: string,
+    destination: string,
+    options: { [key: string]: any }
+  ) {
+    const params = {
+      origin,
+      destination,
+      cabinClass: 'economy',
+      currency: 'EUR',
+      filter: 'best',
+      ...options,
+    };
+    const flights = await this._flightsQuery.searchFlights(params);
+    return flights;
+  }
+
+  async searchAirportByCityName(city: string = '') {
     console.log(`FLIGHTS MANAGER | getAirportByCity | START | city: ${city}`);
-    const endpoint = 'searchAirport';
     const params = {
       query: city,
     };
-    const { data } = await this._skyScannerAdapter.get(endpoint, params);
+    const { data } = await this._flightsQuery.searchAirport(params);
     const airports = data.map((airport: any) => {
       return {
         code: airport.PlaceId,
@@ -161,21 +124,20 @@ class FlightsManager {
     return airports.slice(0, 2);
   }
 
-  async getAirportsByListOfCities(cities: string[] = []) {
+  async getTwoMainAirportsByListOfCities(cities: string[] = []) {
     const airports: { code: string; name: string; city: string }[] = [];
     for (const city of cities) {
       try {
         console.log(
-          `FLIGHTS MANAGER | getAirportsByListOfCities | START | city: ${city}`
+          `FLIGHTS MANAGER | getTwoMainAirportsByListOfCities | START | city: ${city}`
         );
-        const endpoint = 'reference-data/locations';
         const params = {
           subType: 'AIRPORT',
           keyword: city,
           'page[limit]': 2,
           'page[offset]': 0,
         };
-        const response = await this._amadeusAdapter.get(endpoint, params);
+        const response = await this._flightsQuery.getAirportByCityName(params);
         const { data } = response;
         data.forEach((airport: any) => {
           airports.push({
@@ -187,51 +149,11 @@ class FlightsManager {
         await delay(1000);
       } catch (error: any) {
         console.log(
-          `FLIGHTS MANAGER | getAirportsByListOfCities | ERROR | ${error.message}`
+          `FLIGHTS MANAGER | getTwoMainAirportsByListOfCities | ERROR | ${error.message}`
         );
       }
     }
     return airports;
-  }
-
-  async getAirportsByLatitudeAndLongitude(
-    latitude: number,
-    longitude: number
-  ): Promise<{ [key: string]: any }[]> {
-    try {
-      console.log(`FLIGHTS MANAGER | getAirports | START`);
-      const endpoint = 'reference-data/locations/airports';
-      const params = {
-        latitude,
-        longitude,
-        radius: 500,
-        'page[limit]': 20,
-        'page[offset]': 0,
-      };
-      const airports: { [key: string]: any }[] = [];
-      let totalCount = 0;
-      do {
-        const response = await this._amadeusAdapter.get(endpoint, params);
-        const { data, meta } = response;
-        totalCount = meta.count;
-        console.log(
-          `FLIGHTS MANAGER | getAirports | totalCount: ${totalCount}`
-        );
-        data.forEach((airport: any) => {
-          airports.push({
-            code: airport.iataCode,
-            name: airport.name,
-            city: airport.address.cityName,
-          });
-        });
-        params['page[offset]'] += params['page[limit]'];
-      } while (airports.length < totalCount);
-      console.log(`FLIGHTS MANAGER | getAirports | SUCCESS `);
-      return airports;
-    } catch (error: any) {
-      console.log(`FLIGHTS MANAGER | getAirports | ERROR | ${error.message}`);
-      return [];
-    }
   }
 }
 
@@ -243,4 +165,40 @@ const fromMinutesToHours = (minutes: number) => {
   const hours = Math.floor(minutes / 60);
   const minutesLeft = minutes % 60;
   return `${hours}h ${minutesLeft}m`;
+};
+
+const getMarshalledLeg = (leg: any) => {
+  return {
+    origin: leg.origin.name,
+    destination: leg.destination.name,
+    departure: leg.departure,
+    arrival: leg.arrival,
+    duration: fromMinutesToHours(leg.duration),
+    stopCount: leg.stop_count,
+    stops: leg.stops.map((stop: any) => {
+      return {
+        name: stop.name,
+        displayCode: stop.display_code,
+      };
+    }),
+  };
+};
+
+const marshallFlightsForView = (flights: SkyScannerFlight[]) => {
+  return flights
+    .filter((flight: SkyScannerFlight) => {
+      if (flight.price.amount > 1400) {
+        return false;
+      }
+      return true;
+    })
+    .map((flight: SkyScannerFlight) => {
+      const [wayIn, wayOut] = flight.legs;
+      return {
+        price: flight.price.amount,
+        priceLastUpdate: flight.price.last_updated,
+        wayIn: getMarshalledLeg(wayIn),
+        wayOut: getMarshalledLeg(wayOut),
+      };
+    });
 };

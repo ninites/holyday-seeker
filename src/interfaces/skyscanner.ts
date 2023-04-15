@@ -1,5 +1,5 @@
 
-export interface SkyScannerFlights {
+export interface SkyScannerFlight {
     id:                  string;
     price:               Price;
     legs:                Leg[];

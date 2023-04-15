@@ -7,8 +7,8 @@ import {
 const ROUTE = '/flights';
 
 class FlightsApi {
-  _app: express.Application;
-  _flightsManager: FlightsManager;
+  private readonly _app: express.Application;
+  private readonly _flightsManager: FlightsManager;
   constructor(
     app: express.Application,
     flightsManager: FlightsManager = defaultFlightManager
