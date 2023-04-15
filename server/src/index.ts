@@ -1,9 +1,11 @@
 import express from 'express';
+import cors from 'cors';
 import { FlightsApi } from './api/flights';
 class Server {
   server: express.Application;
   constructor() {
     this.server = express();
+    this.server.use(cors());
     this.initRouting();
     this.launch();
   }
